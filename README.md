@@ -13,6 +13,6 @@ the speed of algorithms that can handle timetabled forms of
 transportation.
 
 # Algorithms
-- RAPTOR (see [pyraptor](https://github.com/lmeulen/pyraptor)
+- RAPTOR (see [pyraptor](https://github.com/lmeulen/pyraptor))
 - Dijkstra's
 - Demand-Responsive Transit (DRT)
