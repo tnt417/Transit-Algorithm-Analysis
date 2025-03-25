@@ -12,7 +12,7 @@ that you can travel on. The goal of this project is to compare
 the speed of algorithms that can handle timetabled forms of
 transportation.
 
-#Algorithms
+# Algorithms
 - RAPTOR (see [pyraptor](https://github.com/lmeulen/pyraptor)
 - Dijkstra's
 - Demand-Responsive Transit (DRT)
