@@ -16,16 +16,17 @@ class TransitGrid: # TODO
     # SAMPLE PRINT
     # TransitGrid: Size = 5
     # 5> X---X   .   .   .
-    #  >     |
-    # 4> .   X-------X   .
-    #  >     B       |
+    #  > E   |
+    # 4> E   X-------X   .
+    #  > E   B       |
     # 3> X---o---B---o---G
-    #  >     |       |   |
-    # 2> .   |   .   B   |
-    #  >     |       |   |
+    #  > E   |       |   |
+    # 2> E   |   .   B   |
+    #  > E   |       |   |
     # 1> @---X---0---X---B
     #   ^1^^^2^^^3^^^4^^^5
-    # KEY ( B = BUS; 2 = 2xBUS, X = STATION; @ = CUR_POINT; - | o = ROUTE, . = EMPTY, G = GOAL )
+    # KEY ( B = BUS; 2 = 2xBUS, X = STATION; @ = CUR_POINT; - | o = ROUTE, E = EXPRESS ROUTE, G = GOAL )
+    
     def __init__(self, size: int):
 
         self.size = size
@@ -37,16 +38,17 @@ class TransitGrid: # TODO
 
         return out
 
-# DESC: Represents a 'Node' on the TransitGrid, printed as an X
-class TransitNode: # TODO
-
-
+# DESC: Represents a 'Station' on the TransitGrid, printed as an X
+class TransitStation: # TODO
 
     def __init__(self, pos_X: int, pos_Y: int):
         self.pos_X = pos_X
         self.pos_Y = pos_Y
 
+        # the S-score detailed in the proposal
+        self.S = 0
+
 class TransitRoute: # TODO
-    # 
+
     def __init__(self, parent_grid: TransitGrid, direction: Direction, length: int, origin_node: TransitNode):
         pass
