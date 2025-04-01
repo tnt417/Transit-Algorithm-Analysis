@@ -13,18 +13,19 @@ class Direction(Enum): # TODO
 
 class TransitGrid: # TODO
 
-    # Example representation when size = 5:
-    # 5> X---0   0   0   0
+    # SAMPLE PRINT
+    # TransitGrid: Size = 5
+    # 5> X---X   .   .   .
     #  >     |
-    # 4> 0   0---0---X   0
-    #  >     |
-    # 3> X   0   0   0   X
-    #  >     |
-    # 2> 0   0   0   0   0
-    #  >     |
-    # 1> 0   X   0   X   0
+    # 4> .   X-------X   .
+    #  >     B       |
+    # 3> X---o---B---o---G
+    #  >     |       |   |
+    # 2> .   |   .   B   |
+    #  >     |       |   |
+    # 1> @---X---0---X---B
     #   ^1^^^2^^^3^^^4^^^5
-
+    # KEY ( B = BUS; 2 = 2xBUS, X = STATION; @ = CUR_POINT; - | o = ROUTE, . = EMPTY, G = GOAL )
     def __init__(self, size: int):
 
         self.size = size
