@@ -5,7 +5,7 @@ class Algorithm:
     def __init__(self):
         pass
 
-    def run(self):
+    def run(self, grid: TransitGrid):
         pass
 
 class RaptorAlgorithm(Algorithm):

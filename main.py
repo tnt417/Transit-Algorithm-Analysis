@@ -1,23 +1,29 @@
 from algorithms import *
 
-def run_tests(): # TODO
+def run_single_test(grid: TransitGrid): # TODO
 
     dijkstra = DijkstraAlgorithm()
     raptor = RaptorAlgorithm()
     drt = DrtAlgorithm()
 
-    results = [benchmark_algo(dijkstra), benchmark_algo(raptor), benchmark_algo(drt)]
+    results = [benchmark_algo(dijkstra, grid), benchmark_algo(raptor, grid), benchmark_algo(drt, grid)]
 
     print(results)
 
-def benchmark_algo(algo): # TODO
+def benchmark_algo(algo: Algorithm, grid: TransitGrid): # TODO
 
     before_time = 0 # TODO
-    
-    result = algo.run()
+
+    result = algo.run(grid)
 
     after_time = 0 # TODO
 
     return after_time - before_time
 
-run_tests()
+def run_full_test(): #TODO: this should run many tests at the same time
+
+    grid = TransitGrid(10)
+
+    run_single_test(grid)
+
+run_full_test()
