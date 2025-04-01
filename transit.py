@@ -50,5 +50,13 @@ class TransitStation: # TODO
 
 class TransitRoute: # TODO
 
-    def __init__(self, parent_grid: TransitGrid, direction: Direction, length: int, origin_node: TransitNode):
+    def __init__(self, parent_grid: TransitGrid, direction: Direction, length: int, origin_node: TransitStation, is_express: bool):
+        
+        self.parent_grid = parent_grid
+        self.direction = direction
+        self.length = length
+        self.origin_node = origin_node
+        self.is_express = is_express
+
+    def step(self): # TODO
         pass
