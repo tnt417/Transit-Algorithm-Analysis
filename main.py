@@ -1,5 +1,10 @@
 from algorithms import *
 from transit import *
+import time
+import os
+
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def run_single_test(grid: TransitGrid): # TODO
 
@@ -34,3 +39,9 @@ grid = TransitGrid(10)
 grid.add_station(3, 3)
 
 print(grid)
+
+while(True):
+    clear_console()
+    print(grid)
+    time.sleep(1)
+    grid.step()
