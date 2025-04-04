@@ -1,4 +1,5 @@
 from algorithms import *
+from transit import *
 
 def run_single_test(grid: TransitGrid): # TODO
 
@@ -26,4 +27,10 @@ def run_full_test(): #TODO: this should run many tests at the same time
 
     run_single_test(grid)
 
-run_full_test()
+# run_full_test()
+
+grid = TransitGrid(10)
+
+grid.add_station(3, 3)
+
+print(grid)

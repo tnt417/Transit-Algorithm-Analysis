@@ -36,6 +36,59 @@ class TransitGrid: # TODO
 
         out = ""
 
+        for i in reversed(range(0, self.size*2)):
+            out += self.get_print_line(i) + "\n"
+
+        return out
+    
+    def add_station(self, x, y):
+        self.set_grid_cell(x, y, TransitStation(x, y))
+
+    def get_from_grid(self, x, y):
+        return self.grid[x-1][y-1]
+    
+    def set_grid_cell(self, x, y, obj):
+        self.grid[x-1][y-1] = obj
+
+    def get_print_line(self, n):
+        out = ""
+
+        if n == 0: # print x coordinates
+            out += "   ^"
+            for i in range(1, self.size+1):
+                out += str(i)
+                if i != self.size:
+                    out += "^^^"
+        else:
+            if n % 2 == 0: # print in-between lines (routes only)
+                out += "  > "
+                y = n//2
+
+                for x in range(self.size):
+                    out += "|"
+
+                    if x != self.size-1:
+                        out += "   "
+            else: # print lines with nodes
+                y = n//2 + 1
+
+                if y < 10:
+                    out += " " + str(y) + "> "
+                else:
+                    out += str(y) + "> "
+
+                for x in range(self.size):
+                    grid_element = self.get_from_grid(x,y)
+                    if grid_element == None:
+                        out += "o"
+                    else:
+                        out += str(grid_element)
+
+                    if x != self.size-1:
+                        out += "---"
+
+                    
+
         return out
 
 # DESC: Represents a 'Station' on the TransitGrid, printed as an X
@@ -47,6 +100,9 @@ class TransitStation: # TODO
 
         # the S-score detailed in the proposal
         self.S = 0
+
+    def __str__(self):
+        return "X"
 
 class TransitRoute: # TODO
 
