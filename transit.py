@@ -28,13 +28,13 @@ class TransitGrid: # TODO
     #   ^1^^^2^^^3^^^4^^^5
     # KEY ( B = BUS; 2 = 2xBUS, X = STATION; @ = CUR_POINT; - | o = ROUTE, E = EXPRESS ROUTE, G = GOAL )
     
-    def __init__(self, size: int):
+    def __init__(self, size: int, express_chance = 0.2, random_bus_start = False):
 
         self.time = 0
         self.size = size
         self.grid = [[TransitNode(False, x, y) for y in range(size)] for x in range(size)]
-        self.vertical_routes = [TransitRoute(self, Direction.POS_Y, size, self.get_from_grid(i, 0), random.random() > 0.8) for i in range(size)]
-        self.horizontal_routes = [TransitRoute(self, Direction.POS_X, size, self.get_from_grid(0, i), random.random() > 0.8) for i in range(size)]
+        self.vertical_routes = [TransitRoute(self, Direction.POS_Y, size, self.get_from_grid(i, 0), random.random() < express_chance, random_bus_start) for i in range(size)]
+        self.horizontal_routes = [TransitRoute(self, Direction.POS_X, size, self.get_from_grid(0, i), random.random() < express_chance, random_bus_start) for i in range(size)]
 
     def __str__(self): # TODO
 
@@ -58,6 +58,24 @@ class TransitGrid: # TODO
 
     def add_station(self, x, y):
         self.set_grid_cell(x, y, TransitNode(True, x, y))
+
+    def random_add_n_stations(self, n):
+
+        rem = n
+
+        while rem > 0:
+            posX = random.randint(0, self.size-1)
+            posY = random.randint(0, self.size-1)
+
+            atPos = self.get_from_grid(posX, posY)
+
+            if atPos and atPos.is_station:
+                continue
+
+            self.add_station(posX, posY)
+            rem -= 1
+
+        print("Successfully added " + str(n) + " stations to the grid!")
 
     def get_from_grid(self, x, y):
         return self.grid[x][y]
@@ -194,7 +212,7 @@ class TransitNode: # TODO
 
 class TransitRoute: # TODO
 
-    def __init__(self, parent_grid: TransitGrid, direction: Direction, length: int, origin_node: TransitNode, is_express: bool):
+    def __init__(self, parent_grid: TransitGrid, direction: Direction, length: int, origin_node: TransitNode, is_express: bool, randomize_bus_start: bool):
         
         self.parent_grid = parent_grid
         self.direction = direction
@@ -203,6 +221,10 @@ class TransitRoute: # TODO
         self.is_express = is_express
         self.bus_pos = origin_node.get_pos()
         self.bus_direction = direction
+
+        if randomize_bus_start:
+            for i in range(random.randint(0,parent_grid.size*2)):
+                self.step_bus_movement()
 
     def get_bus_pos(self):
         return self.bus_pos
@@ -228,7 +250,7 @@ class TransitRoute: # TODO
         elif self.bus_direction == Direction.POS_Y:
             self.bus_direction = Direction.NEG_Y
 
-    def step_bus(self):
+    def step_bus_movement(self):
 
         dx = 0
         dy = 0
@@ -259,4 +281,4 @@ class TransitRoute: # TODO
         self.bus_pos = (cur_X + dx, cur_Y + dy)   
 
     def step(self): # TODO
-        self.step_bus()
+        self.step_bus_movement()

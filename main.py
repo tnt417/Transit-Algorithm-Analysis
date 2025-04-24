@@ -34,14 +34,14 @@ def run_full_test(): #TODO: this should run many tests at the same time
 
 # run_full_test()
 
-grid = TransitGrid(10)
+grid = TransitGrid(10, express_chance=0.2, random_bus_start=True)
 
-grid.add_station(3, 3)
+grid.random_add_n_stations(10)
 
 print(grid)
 
 while(True):
     clear_console()
     print(grid)
-    time.sleep(1)
+    time.sleep(0.1)
     grid.step()
