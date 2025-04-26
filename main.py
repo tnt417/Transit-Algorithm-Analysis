@@ -28,20 +28,22 @@ def benchmark_algo(algo: Algorithm, grid: TransitGrid): # TODO
 
 def run_full_test(): #TODO: this should run many tests at the same time
 
-    grid = TransitGrid(10)
+    grid = TransitGrid(100)
 
     run_single_test(grid)
 
 # run_full_test()
 
-grid = TransitGrid(10, express_chance=0.2, random_bus_start=True)
-
-grid.random_add_n_stations(10)
+grid = TransitGrid(10, express_chance=0.2, random_bus_start=True, seed = -1, n_stations = 50)
 
 print(grid)
 
 while(True):
     clear_console()
     print(grid)
-    time.sleep(0.1)
+
+    # get user input here
+    grid.TEST_manual_board()
+
+    time.sleep(0.5)
     grid.step()
