@@ -38,14 +38,26 @@ class TransitGrid: # TODO
 
         self.time = 0
         self.size = size
-        self.grid = [[TransitNode(False, x, y) for y in range(size)] for x in range(size)]
+        self.grid = [[TransitNode(False, x, y, self) for y in range(size)] for x in range(size)]
         self.vertical_routes = [TransitRoute(self, Direction.POS_Y, size, self.get_from_grid(i, 0), random.random() < express_chance, random_bus_start) for i in range(size)]
         self.horizontal_routes = [TransitRoute(self, Direction.POS_X, size, self.get_from_grid(0, i), random.random() < express_chance, random_bus_start) for i in range(size)]
 
         self.stations = []
         self.random_add_n_stations(n_stations)
+        self.update_station_neighbors()
 
         self.passenger = TransitPassenger(self.get_random_station().get_pos(), self.get_random_station().get_pos(), self)
+
+    def update_station_neighbors(self):
+        for s in self.stations:
+            for vert_station in self.vertical_routes[s.pos_X].stations:
+                if vert_station == s:
+                    continue
+                s.notify_add_neighbor_station(vert_station)
+            for horiz_station in self.horizontal_routes[s.pos_Y].stations:
+                if horiz_station == s:
+                    continue
+                s.notify_add_neighbor_station(horiz_station)
 
     def __str__(self): # TODO
 
@@ -68,7 +80,7 @@ class TransitGrid: # TODO
             route.step()
 
     def add_station(self, x, y):
-        station = TransitNode(True, x, y)
+        station = TransitNode(True, x, y, self)
         self.set_grid_cell(x, y, station)
         self.stations.append(station)
 
@@ -91,6 +103,16 @@ class TransitGrid: # TODO
         for r in self.horizontal_routes:
             if self.try_board_passenger(r, self.passenger):
                 return
+
+    def take_action(self, action: str):
+        if action == "boardHoriz":
+            self.try_board_passenger(self.horizontal_routes[int(self.passenger.cur_pos[1])], self.passenger)
+        elif action == "boardVert":
+            self.try_board_passenger(self.vertical_routes[int(self.passenger.cur_pos[0])], self.passenger)
+        elif action == "unboard":
+            self.try_unboard_passenger(self.passenger)
+        else:
+            raise RuntimeError("Invalid action!")
 
     # TODO: check that boarding/unboarding happens at stations only
     def try_board_passenger(self, route: "TransitRoute", passenger: "TransitPassenger"):
@@ -186,6 +208,9 @@ class TransitGrid: # TODO
     def get_random_grid_pos(self):
         return (random.randint(0, self.size-1), random.randint(0, self.size-1))
     
+    def passenger_at_goal(self):
+        return self.passenger.cur_pos == self.passenger.goal_pos
+    
     # def add_n_passengers(self, n):
     #     for i in range(n):
     #         self.passengers.append(TransitPassenger(self.get_random_grid_pos(), self.get_random_grid_pos, self))
@@ -280,14 +305,19 @@ class TransitGrid: # TODO
 # DESC: Represents a 'Station' on the TransitGrid, printed as an X
 class TransitNode: # TODO
 
-    def __init__(self, is_station: bool, pos_X: int, pos_Y: int):
+    def __init__(self, is_station: bool, pos_X: int, pos_Y: int, parent_grid: TransitGrid):
         self.is_station = is_station
         self.pos_X = pos_X
         self.pos_Y = pos_Y
+        self.neighbor_stations = []
+        self.parent_grid = parent_grid
 
-        # the S-score detailed in the proposal
+        # the S-score detailed in the proposal, for generation only
         # TODO
         self.S = 0
+
+    def notify_add_neighbor_station(self, node: "TransitNode"):
+        self.neighbor_stations.append(node)
 
     def get_pos(self):
         return (self.pos_X, self.pos_Y)
@@ -316,6 +346,9 @@ class TransitRoute: # TODO
             for i in range(random.randint(0,parent_grid.size*2)):
                 self.step_bus_movement()
 
+        self.start_direction = self.bus_direction
+        self.start_pos = self.bus_pos
+
     def notify_add_station(self, station: TransitNode):
         self.stations.append(station)
 
@@ -342,45 +375,102 @@ class TransitRoute: # TODO
         elif self.bus_direction == Direction.NEG_Y:
             return "\033[94m↓\033[0m"
         
-    def flip_bus(self):
-        if self.bus_direction == Direction.NEG_X:
-            self.bus_direction = Direction.POS_X
-        elif self.bus_direction == Direction.POS_X:
-            self.bus_direction = Direction.NEG_X
-        elif self.bus_direction == Direction.NEG_Y:
-            self.bus_direction = Direction.POS_Y
-        elif self.bus_direction == Direction.POS_Y:
-            self.bus_direction = Direction.NEG_Y
+    def get_opposing_direction(direction):
+        if direction == Direction.NEG_X:
+            return Direction.POS_X
+        elif direction == Direction.POS_X:
+            return Direction.NEG_X
+        elif direction == Direction.NEG_Y:
+            return Direction.POS_Y
+        elif direction == Direction.POS_Y:
+            return Direction.NEG_Y
 
-    def step_bus_movement(self):
+    def flip_bus(self):
+        self.bus_direction = TransitRoute.get_opposing_direction(self.bus_direction)
+
+    def get_movement(self, direction: Direction, timestep: int = 0.5):
 
         dx = 0
         dy = 0
 
-        if self.bus_direction == Direction.NEG_X:
-            dx = -0.5
-        elif self.bus_direction == Direction.POS_X:
-            dx = 0.5
-        elif self.bus_direction == Direction.POS_Y:
-            dy = 0.5
-        elif self.bus_direction == Direction.NEG_Y:
-            dy = -0.5
+        if direction == Direction.NEG_X:
+            dx = -timestep
+        elif direction == Direction.POS_X:
+            dx = timestep
+        elif direction == Direction.POS_Y:
+            dy = timestep
+        elif direction == Direction.NEG_Y:
+            dy = -timestep
 
         if self.is_express:
             dx *= 2
             dy *= 2
 
-        (cur_X, cur_Y) = self.bus_pos
+        return dx, dy
 
-        if cur_X + dx >= (self.parent_grid.size-0.5) or cur_X + dx < 0:
-            self.flip_bus()
-            dx *= -1
+    def time_until_bus(self, station: TransitNode, start_time: float):
+        if station not in self.stations:
+            raise RuntimeError("Station will never be visited by route: not on route")
 
-        if cur_Y + dy >= (self.parent_grid.size-0.5) or cur_Y + dy < 0:
-            self.flip_bus()
-            dy *= -1
+        # for regular routes: cycle every 2*(size-1) minutes
+        # for express routes: cycle every size-1 minutes
+        # modulus by this value to get the "cycle time"
+        # at that point, we can simulate from starting time
+        # and run until 
 
-        self.bus_pos = (cur_X + dx, cur_Y + dy)   
+        if self.is_express:
+            cycle_time = self.parent_grid.size-1
+        else:
+            cycle_time = 2*(self.parent_grid.size-1)
+
+        time_normalized = start_time % cycle_time
+        time_step = 0.5
+
+        simul_pos = self.start_pos
+        simul_dir = self.start_direction
+
+        timer = 0
+
+        while timer < time_normalized:
+            dx, dy = self.get_movement(simul_dir)
+            simul_pos, simul_dir = self.move_bus(simul_pos, simul_dir, dx, dy)
+            timer += time_step
+
+        timer = 0
+
+        while True:
+            if simul_pos == station.get_pos():
+                return timer
+
+            dx, dy = self.get_movement(simul_dir)
+            simul_pos, simul_dir = self.move_bus(simul_pos, simul_dir, dx, dy)
+            timer += time_step
+
+    def move_bus(self, pos, direction, dx, dy):
+        (cur_X, cur_Y) = pos
+
+        new_X = cur_X + dx
+        new_Y = cur_Y + dy
+        new_dir = direction
+
+        if new_X >= (self.parent_grid.size-0.5) or new_X < 0:
+            new_dir = TransitRoute.get_opposing_direction(new_dir)
+            new_X = cur_X - dx
+
+        if new_Y >= (self.parent_grid.size-0.5) or new_Y < 0:
+            new_dir = TransitRoute.get_opposing_direction(new_dir)
+            new_Y = cur_Y - dy
+
+        return (new_X, new_Y), new_dir
+
+    def step_bus_movement(self):
+
+        dx, dy = self.get_movement(self.bus_direction)
+
+        (new_X, new_Y), new_dir = self.move_bus(self.bus_pos, self.bus_direction, dx, dy)
+
+        self.bus_pos = (new_X, new_Y)
+        self.bus_direction = new_dir   
 
     def step(self): # TODO
         self.step_bus_movement()
