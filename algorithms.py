@@ -73,17 +73,23 @@ class DijkstraAlgorithm(Algorithm):
         goal_station = grid.get_from_grid(goal_x, goal_y)
 
         frontier = []
-        i = 0  # Simple integer tie-breaker
 
-        heapq.heappush(frontier, (0, i, start_station, []))  # (time_so_far, order, station, actions_so_far)
+        # tie breaker for the priority queue
+        i = 0
 
+        # in frontier we store: (time_required, order_added, station, actions_to_station)
+        heapq.heappush(frontier, (0, i, start_station, []))
+
+        # store the best time to get to a given 
         best_times = {(start_station.pos_X, start_station.pos_Y): 0}
 
         while frontier:
+            # pop the lowest arrival time node in the frontier
             curr_time, _, curr_station, actions = heapq.heappop(frontier)
 
             if curr_station == goal_station:
-                return actions, curr_time  # return final list of actions and total time
+                # return final list of actions and total time to destination
+                return actions, curr_time
 
             for neighbor in curr_station.neighbor_stations:
                 (time_to_board, time_to_unboard) = self.get_transfer_time(curr_station, neighbor, grid.time + curr_time)
@@ -94,7 +100,7 @@ class DijkstraAlgorithm(Algorithm):
                 if key not in best_times or new_time < best_times[key]:
                     best_times[key] = new_time
 
-                    new_actions = list(actions)  # copy actions list
+                    new_actions = list(actions)
 
                     moving_vert = curr_station.pos_X == neighbor.pos_X
                     moving_horiz = curr_station.pos_Y == neighbor.pos_Y
@@ -103,9 +109,6 @@ class DijkstraAlgorithm(Algorithm):
                         new_actions.append((curr_time + time_to_board, "boardVert"))
                     elif moving_horiz:
                         new_actions.append((curr_time + time_to_board, "boardHoriz"))
-                    else:
-                        # Should never happen in a clean grid
-                        raise ValueError("Neighbor is neither vertical nor horizontal.")
 
                     new_actions.append((new_time, "unboard"))
 
