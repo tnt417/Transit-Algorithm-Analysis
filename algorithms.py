@@ -1,24 +1,244 @@
 import itertools
-from transit import TransitGrid, TransitNode
+from transit import Direction, TransitGrid, TransitNode, TransitRoute
 import heapq
+import math
+import sys
+
+
+class RaptorRoute:
+    def __init__(self):
+        self.stops = []
+        self.trip_interval = 0
+
+    def __str__(self):
+        return f"RaptorRoute: <interval: {self.trip_interval}, stops: {self.stops}>"
+
+    def __repr__(self):
+        return f"RaptorRoute: <interval: {self.trip_interval}, stops: {self.stops}>\n"
+
+
+class RaptorPosition:
+    def __init__(self, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.routes = set()
+        self.stops = set()
+        self.times_by_round = {}  # Allows for easy gaps, I am lazy
+        self.earliest_time = sys.maxsize
+        self.earliest_route = None
+        self.earliest_trip_board_pos = None
+        self.earliest_trip_board_time = None
+        self.earliest_trip = None
+
+    def __str__(self):
+        return f"Position: <x: {self.x}, y: {self.y}, routes: {self.routes}, stops: {self.stops}, times: {self.times_by_round}, early: {self.earliest_time}>"
+
+    def __repr__(self):
+        return f"Position: <x: {self.x}, y: {self.y}, routes: {self.routes}, stops: {self.stops}, times: {self.times_by_round}, early: {self.earliest_time}>\n"
+
+
+class RaptorScheduledStop:
+    def __init__(self, x, y, t, route):
+        # All routes can be transferred between in 0.1 (above 0) time units
+        self.x = x
+        self.y = y
+        self.t = t
+        self.route = route
+
+    def get_pos(self):
+        return (self.x, self.y)
+
+    def __str__(self):
+        return f"RaptorStop: <x: {self.x}, y: {self.y}, t: {self.t}, route: {self.route}>"
+
+    def __repr__(self):
+        return f"RaptorStop: <x: {self.x}, y: {self.y}, t: {self.t}, route: {self.route}>\n"
 
 class Algorithm:
-    
     def __init__(self):
         pass
 
     def get_path(self, grid: TransitGrid):
         pass
+
 
 class RaptorAlgorithm(Algorithm):
-    def __init__(self):
-        pass
+    def get_trip_from_stop_time(self, route: RaptorRoute, time: int):
+        return time // route.trip_interval
+
+    def get_time_from_stop_and_trip(self, route: RaptorRoute, stop: RaptorScheduledStop, trip_num: int):
+        return stop.t + trip_num * route.trip_interval
+
+    def get_earliest_trip(self, route: RaptorRoute, stop: RaptorScheduledStop, time: int):
+        assert time >= 0
+        return math.ceil((time - stop.t) / route.trip_interval)
+
+    def get_position_difference(self, pos1, pos2, size, reversed):
+        diff = abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+        if reversed:
+            diff = size - diff
+        return diff
+
+    def get_stop_time(self, route: TransitRoute,
+                      node_pos: tuple,
+                      interval: int, step: float, is_return: bool):
+        offset_reversed = (route.start_direction == Direction.NEG_X
+                           or route.start_direction == Direction.NEG_Y)
+        size = 2 * route.length - 2
+        dist = self.get_position_difference(node_pos,
+                                            route.origin_node.get_pos(),
+                                            size, is_return)
+        offset = self.get_position_difference(route.start_pos,
+                                              route.origin_node.get_pos(),
+                                              size, offset_reversed)
+
+        diff = dist - offset
+        diff %= 2 * route.length - 2
+
+        return diff * step
+
+    def build_route_data(self, route: TransitRoute):
+        route_data = RaptorRoute()
+        step = 1 if route.is_express else 2
+        interval = (route.length * 2 - 2) * step
+        route_data.trip_interval = interval
+        for station in route.stations:
+            route_data.stops.append(RaptorScheduledStop(
+                station.pos_X,
+                station.pos_Y,
+                self.get_stop_time(route,
+                                   station.get_pos(),
+                                   interval, step, False),
+                route_data))
+            route_data.stops.append(RaptorScheduledStop(
+                station.pos_X,
+                station.pos_Y,
+                self.get_stop_time(route,
+                                   station.get_pos(),
+                                   interval, step, True),
+                route_data))
+
+        # Sort stations by time
+        route_data.stops.sort(key=lambda s: s.t)
+
+        return route_data
+
+    def gen_pos_data(self, grid: TransitGrid):
+        pos_data = {}
+        for route in itertools.chain(grid.vertical_routes, grid.horizontal_routes):
+            route_data = self.build_route_data(route)
+
+            for stop in route_data.stops:
+                pos = stop.get_pos()
+                if pos not in pos_data:
+                    pos_data[pos] = RaptorPosition(pos)
+                pos_data[pos].stops.add(stop)
+        return pos_data
+
+    def generate_actions_from_path(self, start_pos, goal_pos, pos_data):
+        connections = [goal_pos]
+        actions = []
+        cur_pos = goal_pos
+        while cur_pos != start_pos:
+            cur_data = pos_data.get(cur_pos)
+            cur_time = cur_data.earliest_time
+            board_pos = cur_data.earliest_trip_board_pos
+            board_time = cur_data.earliest_trip_board_time
+
+            connections.append(board_pos)
+
+            actions.append((cur_time, "unboard"))
+            if cur_pos[0] == board_pos[0]:
+                actions.append((board_time, "boardVert"))
+            else:
+                actions.append((board_time, "boardHoriz"))
+
+            cur_pos = board_pos
+
+        connections.reverse()
+        actions.reverse()
+
+        time = 0
+        if len(actions) > 0:
+            time = actions[-1][0]
+        return actions, time
 
     def get_path(self, grid: TransitGrid):
-        pass
+        pos_data = self.gen_pos_data(grid)
+        start_pos = grid.passenger.cur_pos
+        goal_pos = grid.passenger.goal_pos
+
+        round_num = 0
+        marked_positions = set()
+        marked_positions.add(start_pos)
+        pos_data[start_pos].times_by_round[0] = 0
+
+        # Every time that we update an earliest arrival time
+        # Store the trip and boarding station
+
+        while len(marked_positions) > 0:
+            round_num += 1
+            Q = {}
+
+            for pos in marked_positions:
+                for stop in pos_data[pos].stops:
+                    r = stop.route
+                    if (r in Q and Q[r].t > stop.t) or r not in Q:
+                        Q[r] = stop
+
+            marked_positions = set()  # Clear all markings
+
+            for route, marked_stop in Q.items():
+                trip = None
+                board_stop = None
+                found_start = False
+                for route_stop in route.stops:
+                    if (not found_start and (
+                            route_stop.x != marked_stop.x or
+                            route_stop.y != marked_stop.y)):
+                        continue
+                    found_start = True
+
+                    pos = route_stop.get_pos()
+                    if trip is not None:
+                        earliest_stop_time = pos_data[pos].earliest_time
+                        earliest_target_time = pos_data[goal_pos].earliest_time
+
+                        arrive_time = self.get_time_from_stop_and_trip(
+                            route,
+                            route_stop,
+                            trip)
+                        if arrive_time < min(earliest_stop_time,
+                                             earliest_target_time):
+                            board_time = self.get_time_from_stop_and_trip(
+                                route,
+                                board_stop,
+                                trip)
+                            pos_data[pos].earliest_trip_board_time = board_time
+                            pos_data[pos].earliest_trip_board_pos = board_stop.get_pos()
+                            pos_data[pos].earliest_trip = trip
+                            pos_data[pos].earliest_route = route
+                            pos_data[pos].earliest_time = arrive_time
+                            pos_data[pos].times_by_round[round_num] = arrive_time
+                            marked_positions.add(pos)
+
+                    cur_time = pos_data[pos].times_by_round.get(round_num)
+                    prev_time = pos_data[pos].times_by_round.get(round_num - 1)
+                    if cur_time is None:
+                        cur_time = sys.maxsize
+                    if prev_time is None:
+                        prev_time = sys.maxsize
+                    if prev_time <= cur_time:
+                        trip = self.get_earliest_trip(route, route_stop, prev_time)
+                        board_stop = route_stop
+
+            # We skip the footpath stage since all transfers are assumed to be
+            # the same station. Talk about this in our report as a limitation
+
+        return self.generate_actions_from_path(start_pos, goal_pos, pos_data)
+
 
 class DijkstraAlgorithm(Algorithm):
-    
     def __init__(self):
         pass
 

@@ -36,6 +36,7 @@ class TransitGrid: # TODO
         if seed != -1:
             random.seed(seed)
 
+        print(seed)
         self.time = 0
         self.size = size
         self.grid = [[TransitNode(False, x, y, self) for y in range(size)] for x in range(size)]

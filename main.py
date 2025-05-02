@@ -57,8 +57,8 @@ def run_full_test(repetitions = 1000, grid_size = 10, express_chance = 0.2, rand
         max_sim_times["dijkstras"] = max(max_sim_times["dijkstras"], sim_time_dij)
 
         # TODO: uncomment once implemented
-        # grid_rapt = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
-        # times_seconds["raptor"] += run_algo(raptor, grid_rapt)
+        grid_rapt = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
+        times_seconds["raptor"] += run_algo(raptor, grid_rapt)
 
         # TODO: uncomment once implemented
         grid_conn = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
