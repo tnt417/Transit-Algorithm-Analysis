@@ -2,6 +2,7 @@ from algorithms import *
 from transit import *
 import time
 import os
+import sys
 
 def clear_console():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -57,8 +58,8 @@ def run_full_test(repetitions = 1000, grid_size = 10, express_chance = 0.2, rand
         max_sim_times["dijkstras"] = max(max_sim_times["dijkstras"], sim_time_dij)
 
         # TODO: uncomment once implemented
-        grid_rapt = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
-        times_seconds["raptor"] += run_algo(raptor, grid_rapt)
+        # grid_rapt = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
+        # times_seconds["raptor"] += run_algo(raptor, grid_rapt)
 
         # TODO: uncomment once implemented
         grid_conn = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
@@ -78,6 +79,16 @@ repetitions = 1000
 grid_size = 10
 express_chance = 0.2
 n_stations = grid_size*grid_size // 2
+
+raptor = RaptorAlgorithm()
+seed = random.randint(0, 100000)
+# seed = 12955
+grid_rapt = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=True, seed=seed, n_stations=n_stations)
+raptor.get_path(grid_rapt)
+print(grid_rapt)
+grid_rapt.step()
+print(grid_rapt)
+sys.exit(0)
 
 test_results, max_sim_times = run_full_test(repetitions=repetitions, grid_size=grid_size, express_chance=express_chance, n_stations=n_stations)
 print("Algorithm timing results for " + str(repetitions) + " repetitions of a " + str(grid_size) + "x" + str(grid_size) 
