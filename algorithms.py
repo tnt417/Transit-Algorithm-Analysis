@@ -1,24 +1,174 @@
 import itertools
-from transit import TransitGrid, TransitNode
+from transit import TransitGrid, TransitNode, TransitRoute
 import heapq
+import sys
+
+
+class RaptorRoute:
+    def __init__(self):
+        self.stops = []
+        self.trip_interval = 0
+
+    def __str__(self):
+        return f"RaptorRoute: <interval: {self.interval}, stops: {self.stops}>"
+
+
+class RaptorPosition:
+    def __init__(self, pos):
+        self.x = pos[0]
+        self.y = pos[1]
+        self.routes = set()
+        self.stops = set()
+        self.times_by_round = {}  # Allows for easy gaps, I am lazy
+        self.earliest_time = sys.maxsize
+
+
+class RaptorScheduledStop:
+    def __init__(self, x, y, t, route):
+        # All routes can be transferred between in 0.1 (above 0) time units
+        self.x = x
+        self.y = y
+        self.t = t
+        self.route = route
+
+    def get_pos(self):
+        return (self.x, self.y)
+
+    def __str__(self):
+        return f"RaptorStop: <x: {self.x}, y: {self.y}, t: {self.t}, rounds: {self.times_by_round}, earliest: {self.earliest_time}"
+
 
 class Algorithm:
-    
     def __init__(self):
         pass
 
     def get_path(self, grid: TransitGrid):
         pass
+
 
 class RaptorAlgorithm(Algorithm):
     def __init__(self):
-        pass
+        self.dijkstra = DijkstraAlgorithm() # FIXME: Remove
+
+    def get_trip_from_stop_time(self, route: RaptorRoute, time: int):
+        return int(time % (route.trip_interval))
+
+    def get_time_from_stop_and_trip(self, route: RaptorRoute, stop: RaptorScheduledStop, trip_num: int):
+        return stop.t + trip_num * route.trip_interval
+
+    def get_earliest_trip(self, route: RaptorRoute, stop: RaptorScheduledStop, time: int):
+        return int((time - stop.t) % route.trip_interval)
+
+    def build_route_data(self, route: TransitRoute):
+        route_data = RaptorRoute()
+        step = 0.5 if route.is_express else 1
+        t = 0
+        for station in route.stations:
+            route_data.stops.append(RaptorScheduledStop(
+                station.pos_X,
+                station.pos_Y,
+                t,
+                route_data))
+            t += step
+
+        # Create the reverse direction's timetable
+        for stop in reversed(route_data.stops):
+            route_data.stops.append(RaptorScheduledStop(
+                stop.x,
+                stop.y,
+                t,
+                route_data))
+            t += step
+
+        route_data.trip_interval = t
+        return route_data
+
+    def get_raptor_data(self, grid: TransitGrid):
+        routes = set()
+        pos_data = {}
+        for route in itertools.chain(grid.vertical_routes, grid.horizontal_routes):
+            route_data = self.build_route_data(route)
+            routes.add(route_data)
+
+            for stop in route_data.stops:
+                pos = stop.get_pos()
+                if pos not in pos_data:
+                    pos_data[pos] = RaptorPosition(pos)
+                pos_data[pos].routes.add(route)
+                pos_data[pos].stops.add(stop)
+        return (routes, pos_data)
+
+    def generate_actions_from_path(self, grid): # FIXME: Fix arguments
+        # FIXME: Reassemble properly
+        # Use dijkstra for now so it does not break
+        # Reference: https://ljn.io/posts/raptor-journey-planning-algorithm
+        return self.dijkstra.get_path(grid)
 
     def get_path(self, grid: TransitGrid):
-        pass
+        route_data, pos_data = self.get_raptor_data(grid)
+        start_pos = grid.passenger.cur_pos
+
+        end_pos = grid.passenger.goal_pos
+
+        round_num = 0
+        marked_positions = [start_pos]
+
+        while len(marked_positions) > 0:
+            round_num += 1
+            Q = {}
+
+            for pos in marked_positions:
+                for stop in pos_data[pos].stops:
+                    r = stop.route
+                    if (r in Q and Q[r].t < stop.t) or r not in Q:
+                        Q[r] = stop
+
+            marked_positions = []  # Clear all markings
+
+            for route, stop in Q.items():
+                trip = None
+                found_start = False
+                for route_stop in route.stops:
+                    if not (found_start or
+                            route_stop.x != stop.x or
+                            route_stop.y != stop.y):
+                        continue
+
+                    pos = stop.get_pos()
+                    if trip is not None:
+                        earliest_stop_time = pos_data[stop.get_pos()].earliest_time
+                        earliest_target_time = pos_data[end_pos].earliest_time
+                        if earliest_stop_time is None:
+                            earliest_stop_time = sys.maxsize
+                        if earliest_target_time is None:
+                            earliest_target_time = sys.maxsize
+
+                        arrive_time = self.get_time_from_stop_and_trip(
+                            route,
+                            route_stop,
+                            trip)
+                        if arrive_time < min(earliest_stop_time,
+                                             earliest_target_time):
+                            pos_data[pos].earliest_time = arrive_time
+                            pos_data[pos].times_by_round[round_num] = arrive_time
+                            marked_positions.append(pos)
+
+                    cur_time = pos_data[pos].times_by_round.get(round_num)
+                    prev_time = pos_data[pos].times_by_round.get(round_num - 1)
+                    if cur_time is None:
+                        cur_time = sys.maxsize
+                    if prev_time is None:
+                        prev_time = sys.maxsize
+                    if prev_time <= cur_time:
+                        trip = self.get_earliest_trip(route, stop, prev_time)
+
+            # We skip the footpath stage since all transfers are assumed to be
+            # the same station. Talk about this in our report as a limitation
+
+        return self.generate_actions_from_path(grid)
+
 
 class DijkstraAlgorithm(Algorithm):
-    
     def __init__(self):
         pass
 
