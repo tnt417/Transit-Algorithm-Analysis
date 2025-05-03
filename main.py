@@ -51,6 +51,8 @@ def run_full_test(repetitions = 1000, grid_size = 10, express_chance = 0.2, rand
 
         grid_dij = TransitGrid(grid_size, express_chance=express_chance, random_bus_start=random_bus_start, seed=seed, n_stations=n_stations)
         
+        # print(grid_dij)
+
         elapsed_time_dij, sim_time_dij = run_algo(dijkstra, grid_dij)
         
         times_seconds["dijkstras"] += elapsed_time_dij
@@ -75,7 +77,7 @@ def run_full_test(repetitions = 1000, grid_size = 10, express_chance = 0.2, rand
 # small grid size
 
 repetitions = 1000
-grid_size = 10
+grid_size = 50
 express_chance = 0.2
 n_stations = grid_size*grid_size // 2
 

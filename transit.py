@@ -133,19 +133,24 @@ class TransitGrid: # TODO
         passenger.route.unboard_passenger(passenger)
 
     def random_add_n_stations(self, n):
-
         rem = n
 
         while rem > 0:
-            posX = random.randint(0, self.size-1)
-            posY = random.randint(0, self.size-1)
 
-            atPos = self.get_from_grid(posX, posY)
+            # calculate S values for the grid
+            S_counts = {(x, y): len(self.horizontal_routes[y].stations) + len(self.vertical_routes[x].stations)
+                        for x in range(self.size)
+                        for y in range(self.size)
+                        if not self.get_from_grid(x, y).is_station
+                        }
 
-            if atPos and atPos.is_station:
-                continue
+            min_S = min(S_counts.values())
 
+            candidates = [pos for pos, s in S_counts.items() if s == min_S]
+
+            (posX, posY) = random.choice(candidates)
             self.add_station(posX, posY)
+            
             rem -= 1
 
     def get_from_grid(self, x, y):
@@ -354,6 +359,12 @@ class TransitRoute: # TODO
 
     def get_bus_pos(self):
         return self.bus_pos
+    
+    def get_random_pos(self):
+        if self.direction == Direction.POS_X:
+            return (random.randint(0, self.parent_grid.size-1), self.start_pos[1])
+        else:
+            return (self.start_pos[0], random.randint(0, self.parent_grid.size-1))
     
     def get_bus_station(self):
 
