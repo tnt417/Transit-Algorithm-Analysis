@@ -1,6 +1,8 @@
 from algorithms import *
 from transit import *
 import time
+import matplotlib.pyplot as plt
+import numpy as np
 
 def run_algo(algo: Algorithm, grid: TransitGrid): # TODO
 
@@ -75,19 +77,63 @@ def run_full_test(repetitions = 1000, grid_size = 10, express_chance = 0.2, rand
 
     return times_seconds, {k:(v/repetitions) for (k,v) in sum_sim_times.items()}, {k:(v/repetitions) for (k,v) in sum_transfers.items()}
 
+grid_sizes = []
+times_dij = []
+times_conn = []
+times_rapt = []
+
+repetitions_per_size = 1
+
+for grid_size in range(10,50):
+
+    print("Grid size " + str(grid_size) + "...")
+
+    grid_sizes.append(grid_size)
+
+    express_chance = 0.2
+    n_stations = grid_size*grid_size // 2
+
+    test_results, avg_sim_times, avg_transfers = run_full_test(repetitions=repetitions_per_size, grid_size=grid_size, express_chance=express_chance, n_stations=n_stations)
+    # print("Algorithm timing results for " + str(repetitions) + " repetitions of a " + str(grid_size) + "x" + str(grid_size) 
+    #     + " grid with a " + str(express_chance) + " probability of express lines and " + str(n_stations) + " stations:")
+    # print("Total compute time: " + str(test_results))
+    # print("Average timesteps to goal: " + str(avg_sim_times))
+    # print("Average transfers to goal: " + str(avg_transfers))
+
+    times_dij.append(test_results["dijkstras"])
+    times_conn.append(test_results["connection"])
+    times_rapt.append(test_results["raptor"])
+
+x = np.array(grid_sizes)
+
+y1 = np.array(times_dij)
+y2 = np.array(times_rapt)
+y3 = np.array(times_conn)
+
+plt.scatter(x, y1, color='blue', label='Dijkstra\'s')
+plt.scatter(x, y2, color='red', label='RAPTOR')
+plt.scatter(x, y3, color='green', label='CSA')
+
+plt.xlabel('Grid Size')
+plt.ylabel('Compute Time for ' + str(repetitions_per_size) + ' Solves')
+plt.title('Comparison of Compute Time vs Grid Size for Each Algorithm')
+
+plt.legend()
+plt.show()
+
 # small grid size
 
-repetitions = 100
-grid_size = 20
-express_chance = 0.2
-n_stations = grid_size*grid_size // 2
+# repetitions = 100
+# grid_size = 20
+# express_chance = 0.2
+# n_stations = grid_size*grid_size // 2
 
-test_results, avg_sim_times, avg_transfers = run_full_test(repetitions=repetitions, grid_size=grid_size, express_chance=express_chance, n_stations=n_stations)
-print("Algorithm timing results for " + str(repetitions) + " repetitions of a " + str(grid_size) + "x" + str(grid_size) 
-      + " grid with a " + str(express_chance) + " probability of express lines and " + str(n_stations) + " stations:")
-print("Total compute time: " + str(test_results))
-print("Average timesteps to goal: " + str(avg_sim_times))
-print("Average transfers to goal: " + str(avg_transfers))
+# test_results, avg_sim_times, avg_transfers = run_full_test(repetitions=repetitions, grid_size=grid_size, express_chance=express_chance, n_stations=n_stations)
+# print("Algorithm timing results for " + str(repetitions) + " repetitions of a " + str(grid_size) + "x" + str(grid_size) 
+#       + " grid with a " + str(express_chance) + " probability of express lines and " + str(n_stations) + " stations:")
+# print("Total compute time: " + str(test_results))
+# print("Average timesteps to goal: " + str(avg_sim_times))
+# print("Average transfers to goal: " + str(avg_transfers))
 
 # medium grid size
 
