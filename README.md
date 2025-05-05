@@ -15,4 +15,4 @@ transportation.
 # Algorithms
 - RAPTOR (see [pyraptor](https://github.com/lmeulen/pyraptor))
 - Dijkstra's
-- Demand-Responsive Transit (DRT)
+- Connection Scan Algorithm (CSA)
