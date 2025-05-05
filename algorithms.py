@@ -347,7 +347,7 @@ class ConnectionAlgorithm(Algorithm):
             if dep_time >= earliest_arrival[dep_pos]:
                 # if the connection would lead to an earlier arrival time at
                 # the station, update the earliest arrival and predeccesor
-                if arr_time < earliest_arrival[arr_pos]:
+                if arr_time <= earliest_arrival[arr_pos]:
                     earliest_arrival[arr_pos] = arr_time
                     predecessors[arr_pos] = (dep_pos, dep_time, arr_pos, arr_time)
 

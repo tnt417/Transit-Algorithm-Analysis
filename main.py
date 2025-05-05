@@ -82,9 +82,17 @@ times_dij = []
 times_conn = []
 times_rapt = []
 
-repetitions_per_size = 1
+avg_sim_dij = []
+avg_sim_conn = []
+avg_sim_rapt = []
 
-for grid_size in range(10,50):
+avg_transfers_dij = []
+avg_transfers_conn = []
+avg_transfers_rapt = []
+
+repetitions_per_size = 20
+
+for grid_size in range(10,30):
 
     print("Grid size " + str(grid_size) + "...")
 
@@ -104,21 +112,42 @@ for grid_size in range(10,50):
     times_conn.append(test_results["connection"])
     times_rapt.append(test_results["raptor"])
 
+    avg_sim_dij.append(avg_sim_times["dijkstras"])
+    avg_sim_conn.append(avg_sim_times["connection"])
+    avg_sim_rapt.append(avg_sim_times["raptor"])
+
+    avg_transfers_dij.append(avg_transfers["dijkstras"])
+    avg_transfers_conn.append(avg_transfers["connection"])
+    avg_transfers_rapt.append(avg_transfers["raptor"])
+
 x = np.array(grid_sizes)
 
-y1 = np.array(times_dij)
-y2 = np.array(times_rapt)
-y3 = np.array(times_conn)
-
-plt.scatter(x, y1, color='blue', label='Dijkstra\'s')
-plt.scatter(x, y2, color='red', label='RAPTOR')
-plt.scatter(x, y3, color='green', label='CSA')
-
+plt.figure()
+plt.scatter(x, times_dij, label="Dijkstra's")
+plt.scatter(x, times_rapt, label="RAPTOR")
+plt.scatter(x, times_conn, label="CSA")
 plt.xlabel('Grid Size')
-plt.ylabel('Compute Time for ' + str(repetitions_per_size) + ' Solves')
-plt.title('Comparison of Compute Time vs Grid Size for Each Algorithm')
-
+plt.ylabel(f'Compute Time for {repetitions_per_size} Solves (s)')
+plt.title('Compute Time vs Grid Size')
 plt.legend()
+
+plt.figure()
+plt.scatter(x, avg_sim_dij, label="Dijkstra's and CSA")
+plt.scatter(x, avg_sim_rapt, label="RAPTOR")
+plt.xlabel('Grid Size')
+plt.ylabel('Average Simulation Timesteps to Goal')
+plt.title('Average Simulation Timesteps vs Grid Size')
+plt.legend()
+
+plt.figure()
+plt.scatter(x, avg_transfers_dij, label="Dijkstra's")
+plt.scatter(x, avg_transfers_rapt, label="RAPTOR")
+plt.scatter(x, avg_transfers_conn, label="CSA")
+plt.xlabel('Grid Size')
+plt.ylabel('Average Number of Transfers to Goal')
+plt.title('Average Transfers vs Grid Size')
+plt.legend()
+
 plt.show()
 
 # small grid size
